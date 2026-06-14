@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StudyBuddy AI - 你的AI学习伴侣</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#dcd9dc",
+                    "primary-fixed-dim": "#a0caff",
+                    "on-secondary-container": "#fffbff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#fcf8fb",
+                    "on-tertiary-container": "#fffbff",
+                    "tertiary": "#7b5500",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#fdfcff",
+                    "on-secondary-fixed-variant": "#4918c8",
+                    "tertiary-fixed": "#ffdeab",
+                    "on-primary-fixed": "#001c37",
+                    "surface-container": "#f0edef",
+                    "inverse-primary": "#a0caff",
+                    "on-secondary": "#ffffff",
+                    "surface-tint": "#0061a5",
+                    "primary": "#005ea1",
+                    "tertiary-container": "#9a6c00",
+                    "on-primary-fixed-variant": "#00497e",
+                    "on-error-container": "#93000a",
+                    "on-background": "#1b1b1d",
+                    "secondary-fixed-dim": "#cabeff",
+                    "on-surface-variant": "#414751",
+                    "background": "#fcf8fb",
+                    "primary-container": "#2b78bf",
+                    "tertiary-fixed-dim": "#fbbb45",
+                    "on-tertiary-fixed-variant": "#5f4100",
+                    "surface-container-high": "#eae7ea",
+                    "outline": "#717782",
+                    "surface-container-low": "#f6f3f5",
+                    "on-error": "#ffffff",
+                    "surface-bright": "#fcf8fb",
+                    "surface-variant": "#e4e2e4",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#7857f8",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#1c0062",
+                    "inverse-surface": "#303032",
+                    "secondary": "#5f3add",
+                    "on-surface": "#1b1b1d",
+                    "outline-variant": "#c1c7d2",
+                    "surface-container-highest": "#e4e2e4",
+                    "on-tertiary-fixed": "#271900",
+                    "inverse-on-surface": "#f3f0f2",
+                    "secondary-fixed": "#e6deff",
+                    "primary-fixed": "#d2e4ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "md": "16px",
+                    "xl": "32px",
+                    "gutter": "24px",
+                    "unit": "4px",
+                    "lg": "24px",
+                    "container-margin": "20px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "headline-md": ["PingFang SC", "Microsoft YaHei", "sans-serif"],
+                    "label-md": ["PingFang SC", "Microsoft YaHei", "sans-serif"],
+                    "body-md": ["PingFang SC", "Microsoft YaHei", "sans-serif"],
+                    "headline-sm": ["PingFang SC", "Microsoft YaHei", "sans-serif"],
+                    "display-lg": ["PingFang SC", "Microsoft YaHei", "sans-serif"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(229, 229, 229, 0.5);
+        }
+        .active-indicator {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-spring {
+            animation: springIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes springIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .thinking-dots span {
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        .drag-pulse {
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-color: rgba(0, 94, 161, 0.3); }
+            50% { border-color: rgba(0, 94, 161, 1); }
+            100% { border-color: rgba(0, 94, 161, 0.3); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e5e5e7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container/30 overflow-hidden">
+<div class="flex h-screen w-full relative">
+<!-- Sidebar -->
+<aside class="hidden md:flex flex-col w-[280px] h-full bg-surface-container-low border-r border-outline-variant/20 z-30">
+<!-- Brand -->
+<div class="p-lg">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[24px]">school</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm text-primary font-extrabold tracking-tight">StudyBuddy AI</h1>
+<p class="text-[11px] text-on-surface-variant font-medium opacity-70">你的AI学习伴侣</p>
+</div>
+</div>
+</div>
+<!-- Conversation List -->
+<div class="flex-1 overflow-y-auto px-md space-y-xs custom-scrollbar">
+<p class="px-md py-xs text-[11px] font-bold text-on-surface-variant uppercase tracking-wider opacity-50">历史记录</p>
+<!-- Chat Item Active -->
+<div class="group relative flex items-center gap-md p-md rounded-xl bg-primary-container text-on-primary-container font-semibold transition-all duration-300">
+<div class="absolute left-0 top-1/4 bottom-1/4 w-[3px] bg-white rounded-full"></div>
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="truncate text-label-md">量子力学基础理论解析...</p>
+<p class="text-[10px] opacity-70">3分钟前</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 p-xs hover:bg-white/20 rounded-lg transition-opacity">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<!-- Chat Item Inactive -->
+<div class="group relative flex items-center gap-md p-md rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="truncate text-label-md">2024考研英语作文热点话题</p>
+<p class="text-[10px] opacity-60">1小时前</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 p-xs hover:bg-on-surface/5 rounded-lg transition-opacity">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<div class="group relative flex items-center gap-md p-md rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all duration-300">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="truncate text-label-md">机器学习中的梯度下降算法...</p>
+<p class="text-[10px] opacity-60">昨天</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 p-xs hover:bg-on-surface/5 rounded-lg transition-opacity">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<!-- Sidebar Bottom -->
+<div class="p-md bg-surface-container-low/80 backdrop-blur-md">
+<button class="w-full py-md px-lg flex items-center justify-center gap-sm bg-white border border-outline-variant/30 text-primary font-bold rounded-2xl shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined">add</span>
+<span>新建对话</span>
+</button>
+<div class="mt-md flex items-center gap-md p-sm rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer">
+<img alt="User" class="w-8 h-8 rounded-full border border-outline-variant/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3DTdgMw-QGI1L7CntSaorAzLa1mSKoub-VXSSO1iDYYh5fl1Ww18T0YFwqhQqe73eGVNJrV9amO5tgRCdWD7-hFpaV1TjcKuqdM6ZH0rn32IAc3LfaC9C1NlI7uPxiCSVbD1rXwriUR4gHjjjFw80Qh9qyr91Kyu0Z_Lb_-mBW_MrY0dqPH2aN6OzRg7rm0PWvEJLTgteSqfsORHPLyv_TuwOCfrVpZA8gLsMQ8l4W6cKSnP5LDlViQ"/>
+<div class="flex-1 overflow-hidden">
+<p class="text-label-md font-bold truncate">学习达人</p>
+<p class="text-[10px] text-on-surface-variant opacity-60">专业版已激活</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">settings</span>
+</div>
+</div>
+</aside>
+<!-- Main Chat Area -->
+<main class="flex-1 flex flex-col h-full bg-white relative overflow-hidden">
+<!-- Header Mode Switcher -->
+<header class="h-16 flex items-center justify-center px-lg border-b border-outline-variant/10 z-20">
+<div class="relative flex bg-surface-container-high rounded-full p-1 gap-1">
+<!-- Indicator Background -->
+<div class="absolute h-[calc(100%-8px)] w-[calc(33.33%-4px)] bg-white rounded-full shadow-sm active-indicator left-1 top-1" id="mode-indicator"></div>
+<button class="relative z-10 px-6 py-1.5 text-label-md font-bold text-primary transition-colors flex items-center gap-1" onclick="switchMode(0)">
+<span>💬</span> 问答
+                    </button>
+<button class="relative z-10 px-6 py-1.5 text-label-md font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" onclick="switchMode(1)">
+<span>📝</span> 出题
+                    </button>
+<button class="relative z-10 px-6 py-1.5 text-label-md font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1" onclick="switchMode(2)">
+<span>📅</span> 计划
+                    </button>
+</div>
+<div class="absolute right-md flex gap-sm">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">share</span>
+</button>
+</div>
+</header>
+<!-- Message Stream / Empty State -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-lg" id="chat-stream">
+<!-- Empty State (Shown by default) -->
+<div class="flex flex-col items-center justify-center h-full max-w-2xl mx-auto text-center space-y-xl fade-in-up">
+<div class="w-20 h-20 bg-primary-container/20 rounded-3xl flex items-center justify-center text-primary mb-md">
+<span class="material-symbols-outlined text-[48px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="space-y-sm">
+<h2 class="text-headline-md font-extrabold text-primary">今天想学点什么？</h2>
+<p class="text-body-lg text-on-surface-variant/70">我可以帮你解析难题、生成练习题，或者为你制定专属学习计划。</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md w-full pt-lg">
+<div class="p-lg bg-surface border border-outline-variant/30 rounded-2xl hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left group">
+<span class="text-2xl mb-md block">💬</span>
+<h3 class="font-bold text-primary mb-xs">深度问答</h3>
+<p class="text-caption-sm text-on-surface-variant">上传论文或教材，让我为你解读复杂概念。</p>
+</div>
+<div class="p-lg bg-surface border border-outline-variant/30 rounded-2xl hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left group">
+<span class="text-2xl mb-md block">📝</span>
+<h3 class="font-bold text-primary mb-xs">智能测验</h3>
+<p class="text-caption-sm text-on-surface-variant">根据你的学习进度，生成针对性的模拟考试。</p>
+</div>
+<div class="p-lg bg-surface border border-outline-variant/30 rounded-2xl hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left group">
+<span class="text-2xl mb-md block">📅</span>
+<h3 class="font-bold text-primary mb-xs">学习计划</h3>
+<p class="text-caption-sm text-on-surface-variant">设定目标日期，我会帮你拆解任务到每一天。</p>
+</div>
+</div>
+</div>
+<!-- Example Message Bubble (Hidden by default, used for animation ref) -->
+<!-- 
+                <div class="flex flex-col items-end space-y-xs mb-lg message-spring">
+                    <div class="bg-primary text-white p-md rounded-2xl rounded-br-none max-w-[80%] shadow-sm">
+                        <p class="text-body-md">请解释一下量子纠缠是如何工作的？</p>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant opacity-50 px-sm">14:02</span>
+                </div>
+
+                <div class="flex flex-col items-start space-y-xs mb-lg message-spring">
+                    <div class="bg-white border border-outline-variant/20 p-md rounded-2xl rounded-bl-none max-w-[90%] shadow-sm">
+                        <div class="prose prose-sm text-on-surface">
+                            <p>量子纠缠是一种奇特的量子力学现象，即使两个粒子相距遥远，它们也能以一种“幽灵般的超距作用”相互关联...</p>
+                        </div>
+                        <div class="mt-md pt-sm border-t border-outline-variant/10 flex flex-wrap gap-xs">
+                            <span class="px-2 py-0.5 bg-surface-container text-[10px] rounded-full border border-outline-variant/20">来源: 维基百科</span>
+                            <span class="px-2 py-0.5 bg-surface-container text-[10px] rounded-full border border-outline-variant/20">来源: 《现代物理导论》</span>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant opacity-50 px-sm">StudyBuddy AI</span>
+                </div>
+                -->
+</div>
+<!-- Input Area -->
+<div class="p-lg bg-white/80 backdrop-blur-xl border-t border-outline-variant/10">
+<div class="max-w-3xl mx-auto relative group">
+<div class="absolute inset-0 bg-primary/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
+<div class="relative flex items-center gap-sm bg-surface border border-outline-variant/30 rounded-[24px] p-2 pr-4 shadow-sm group-focus-within:border-primary/50 group-focus-within:shadow-md transition-all duration-300">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-body-md py-2 resize-none max-h-32 custom-scrollbar" id="chat-input" oninput="toggleSendButton()" placeholder="输入问题或上传资料..." rows="1"></textarea>
+<button class="w-10 h-10 flex items-center justify-center bg-primary/10 text-primary/40 rounded-full transition-all duration-300 disabled:cursor-not-allowed enabled:bg-primary enabled:text-white enabled:shadow-lg enabled:hover:scale-105 active:scale-95" disabled="" id="send-btn">
+<span class="material-symbols-outlined">arrow_upward</span>
+</button>
+</div>
+<div class="flex justify-center mt-sm">
+<p class="text-[10px] text-on-surface-variant opacity-40">StudyBuddy AI 可能会产生误差。请仔细核实重要信息。</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Panel: Knowledge Base -->
+<aside class="hidden lg:flex flex-col w-[320px] h-full bg-surface-container-low border-l border-outline-variant/20 z-30">
+<div class="p-lg">
+<div class="flex items-center justify-between mb-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-sm">
+<span>📚</span> 知识库
+                    </h2>
+<span class="px-2 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-full">12 个文档</span>
+</div>
+<!-- Drag-Drop Upload -->
+<div class="relative group cursor-pointer" id="drop-zone">
+<div class="w-full h-32 border-2 border-dashed border-outline-variant/40 rounded-2xl flex flex-col items-center justify-center bg-surface-container-high/30 group-hover:bg-primary/5 group-hover:border-primary/40 transition-all duration-300">
+<span class="material-symbols-outlined text-primary mb-xs text-[32px]">upload_file</span>
+<p class="text-label-md font-bold text-on-surface-variant">点击或拖拽上传</p>
+<p class="text-[10px] text-on-surface-variant opacity-50 mt-1">支持 PDF, DOCX, Markdown</p>
+</div>
+<!-- Hidden file input -->
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file"/>
+</div>
+<!-- Document List -->
+<div class="mt-xl space-y-md">
+<p class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider opacity-50">最近文件</p>
+<!-- Doc Item: Ready -->
+<div class="flex items-center gap-md p-sm rounded-xl hover:bg-surface-container-high transition-colors group">
+<div class="w-10 h-10 bg-error-container/30 text-error rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-label-md font-bold text-on-surface truncate">线性代数复习大纲.pdf</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+<p class="text-[10px] text-on-surface-variant opacity-60">2.4 MB · 已就绪</p>
+</div>
+</div>
+</div>
+<!-- Doc Item: Processing -->
+<div class="flex items-center gap-md p-sm rounded-xl hover:bg-surface-container-high transition-colors group">
+<div class="w-10 h-10 bg-secondary-container/10 text-secondary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-label-md font-bold text-on-surface truncate">2024届毕业生就业指导.docx</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>
+<p class="text-[10px] text-on-surface-variant opacity-60">1.8 MB · 处理中...</p>
+</div>
+</div>
+</div>
+<!-- Doc Item: Failed -->
+<div class="flex items-center gap-md p-sm rounded-xl hover:bg-surface-container-high transition-colors group">
+<div class="w-10 h-10 bg-surface-variant text-on-surface-variant/40 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">article</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-label-md font-bold text-on-surface-variant/60 truncate">未知文件内容.txt</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<p class="text-[10px] text-error opacity-80 font-bold">解析失败</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Panel Bottom CTA -->
+<div class="mt-auto p-lg">
+<div class="bg-primary/5 p-lg rounded-2xl border border-primary/10">
+<div class="flex items-center gap-sm mb-sm text-primary">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<p class="text-label-md font-bold">学习进度追踪</p>
+</div>
+<div class="w-full bg-outline-variant/30 h-1.5 rounded-full overflow-hidden mb-sm">
+<div class="bg-primary h-full w-[65%] rounded-full"></div>
+</div>
+<p class="text-[11px] text-on-surface-variant">本周已完成 <span class="font-bold text-primary">12/20</span> 小时学习目标</p>
+</div>
+</div>
+</aside>
+</div>
+<!-- Background Decoration -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 opacity-30">
+<div class="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/10 blur-[120px]"></div>
+</div>
+<script>
+        function switchMode(index) {
+            const indicator = document.getElementById('mode-indicator');
+            const buttons = indicator.parentElement.querySelectorAll('button');
+            
+            // Move indicator
+            indicator.style.transform = `translateX(${index * 100}%)`;
+            if (index > 0) {
+                indicator.style.transform = `translateX(calc(${index * 100}% + ${index * 4}px))`;
+            }
+
+            // Update text styles
+            buttons.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('text-primary', 'font-bold');
+                    btn.classList.remove('text-on-surface-variant', 'font-medium');
+                } else {
+                    btn.classList.remove('text-primary', 'font-bold');
+                    btn.classList.add('text-on-surface-variant', 'font-medium');
+                }
+            });
+        }
+
+        function toggleSendButton() {
+            const input = document.getElementById('chat-input');
+            const btn = document.getElementById('send-btn');
+            if (input.value.trim().length > 0) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+            
+            // Auto resize textarea
+            input.style.height = 'auto';
+            input.style.height = (input.scrollHeight) + 'px';
+        }
+
+        // Drag and Drop visual effect
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.firstElementChild.classList.add('drag-pulse', 'bg-primary/10', 'border-primary');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.firstElementChild.classList.remove('drag-pulse', 'bg-primary/10', 'border-primary');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.firstElementChild.classList.remove('drag-pulse', 'bg-primary/10', 'border-primary');
+            alert('文件已添加至解析队列');
+        });
+
+        // Simple Message Injection for demo
+        document.getElementById('send-btn').addEventListener('click', () => {
+            const input = document.getElementById('chat-input');
+            const stream = document.getElementById('chat-stream');
+            
+            if (!input.value.trim()) return;
+
+            // Hide empty state if first message
+            const emptyState = stream.querySelector('.fade-in-up');
+            if (emptyState) emptyState.style.display = 'none';
+
+            const userMsg = `
+                <div class="flex flex-col items-end space-y-xs mb-lg message-spring">
+                    <div class="bg-primary text-white p-md rounded-2xl rounded-br-none max-w-[80%] shadow-sm">
+                        <p class="text-body-md">${input.value}</p>
+                    </div>
+                </div>
+            `;
+            
+            stream.insertAdjacentHTML('beforeend', userMsg);
+            input.value = '';
+            toggleSendButton();
+
+            // Simulate Thinking
+            const aiMsg = `
+                <div id="thinking-msg" class="flex flex-col items-start space-y-xs mb-lg message-spring">
+                    <div class="bg-white border border-outline-variant/20 p-md rounded-2xl rounded-bl-none shadow-sm min-w-[100px]">
+                        <div class="thinking-dots flex gap-1">
+                            <span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
+                            <span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
+                            <span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            stream.insertAdjacentHTML('beforeend', aiMsg);
+            stream.scrollTop = stream.scrollHeight;
+
+            setTimeout(() => {
+                const thinking = document.getElementById('thinking-msg');
+                thinking.innerHTML = `
+                    <div class="bg-white border border-outline-variant/20 p-md rounded-2xl rounded-bl-none max-w-[90%] shadow-sm">
+                        <div class="prose prose-sm text-on-surface">
+                            <p>这是一个很好的问题。正在为您从知识库中的《现代物理导论》调取相关资料进行综合解答...</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant opacity-50 px-sm">StudyBuddy AI</span>
+                `;
+                stream.scrollTop = stream.scrollHeight;
+            }, 1500);
+        });
+    </script>
+</body></html>

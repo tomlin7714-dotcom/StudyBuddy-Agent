@@ -10,6 +10,21 @@ const api = axios.create({
   },
 })
 
+// 401 auto-redirect: container restarted → DB wiped → old token invalid
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error?.response?.status === 401) {
+      localStorage.removeItem('study_buddy_auth')
+      delete api.defaults.headers.common['Authorization']
+      if (window.location.pathname !== '/') {
+        window.location.href = '/'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const chatAPI = {
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     const response = await api.post<ChatResponse>('/chat/', request)

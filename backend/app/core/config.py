@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # ChromaDB
     chroma_persist_dir: str = Field("./data/chroma", env="CHROMA_PERSIST_DIR")
-    chroma_collection_name: str = Field("study_buddy_knowledge", env="CHROMA_COLLECTION_NAME")
+    chroma_collection_name: str = Field("sb", env="CHROMA_COLLECTION_NAME")
 
     # Database
     database_url: str = Field("sqlite+aiosqlite:///./data/study_buddy.db", env="DATABASE_URL")

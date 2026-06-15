@@ -201,10 +201,13 @@ async def chat_stream(
                     await queue.put(("stream_error", e))
 
             async def pump_heartbeats():
-                """Send a heartbeat marker every 15s while the stream is alive."""
+                """Send a heartbeat marker every 10s while the stream is alive.
+                10s interval is conservative — HF proxy may close idle connections
+                in as little as 30s. Data events (not SSE comments) are used because
+                some proxies do not count comments as activity."""
                 try:
                     while True:
-                        await asyncio.sleep(15)
+                        await asyncio.sleep(10)
                         await queue.put(("heartbeat", None))
                 except asyncio.CancelledError:
                     pass
@@ -235,8 +238,8 @@ async def chat_stream(
                             yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
 
                     elif msg_type == "heartbeat":
-                        # SSE comment — keeps HF proxy connection alive during long tool calls
-                        yield ": heartbeat\n\n"
+                        # Data event (not SSE comment) — some proxies only count data lines as activity
+                        yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
 
                     elif msg_type == "stream_done":
                         break

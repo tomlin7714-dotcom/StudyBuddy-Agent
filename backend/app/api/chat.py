@@ -182,37 +182,81 @@ async def chat_stream(
             }
 
             full_content = ""
-            # Iterate through stream events.
-            # Use asyncio.wait_for with a 15s timeout per event so we can send
-            # SSE heartbeat comments during long tool executions (quiz/plan generation).
-            # HF Spaces proxy kills connections idle for ~60s, so 15s is safe.
+            # Use a Queue to safely interleave SSE heartbeats with stream events.
+            # We CANNOT use asyncio.wait_for(stream.__anext__(), timeout=15)
+            # because it cancels the async generator's __anext__() coroutine on
+            # timeout, which corrupts LangGraph's internal stream state.
+            # Instead: pump events into a queue in one task, heartbeats in another,
+            # and read from the queue in the main loop — no cancellation needed.
             stream = agent.astream_events(state, config=config, version="v1")
-            stream_done = False
+            queue: asyncio.Queue = asyncio.Queue()
 
-            while not stream_done:
+            async def pump_events():
+                """Read from astream_events using normal async for — never cancelled."""
                 try:
-                    event = await asyncio.wait_for(stream.__anext__(), timeout=15.0)
-                    event_type = event.get("event")
+                    async for event in stream:
+                        await queue.put(("event", event))
+                    await queue.put(("stream_done", None))
+                except Exception as e:
+                    await queue.put(("stream_error", e))
 
-                    if event_type == "on_chat_model_stream":
-                        chunk = event.get("data", {}).get("chunk")
-                        if chunk and hasattr(chunk, "content") and chunk.content:
-                            full_content += chunk.content
-                            yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+            async def pump_heartbeats():
+                """Send a heartbeat marker every 15s while the stream is alive."""
+                try:
+                    while True:
+                        await asyncio.sleep(15)
+                        await queue.put(("heartbeat", None))
+                except asyncio.CancelledError:
+                    pass
 
-                    elif event_type == "on_tool_start":
-                        tool_name = event.get("name", "")
-                        yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name})}\n\n"
+            event_task = asyncio.create_task(pump_events())
+            heartbeat_task = asyncio.create_task(pump_heartbeats())
 
-                    elif event_type == "on_tool_end":
-                        tool_name = event.get("name", "")
-                        yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
+            try:
+                while True:
+                    msg_type, data = await queue.get()
 
-                except asyncio.TimeoutError:
-                    # No event for 15s — send heartbeat comment to keep connection alive
-                    yield ": heartbeat\n\n"
-                except StopAsyncIteration:
-                    stream_done = True
+                    if msg_type == "event":
+                        event = data
+                        event_type = event.get("event")
+
+                        if event_type == "on_chat_model_stream":
+                            chunk = event.get("data", {}).get("chunk")
+                            if chunk and hasattr(chunk, "content") and chunk.content:
+                                full_content += chunk.content
+                                yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+
+                        elif event_type == "on_tool_start":
+                            tool_name = event.get("name", "")
+                            yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name})}\n\n"
+
+                        elif event_type == "on_tool_end":
+                            tool_name = event.get("name", "")
+                            yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
+
+                    elif msg_type == "heartbeat":
+                        # SSE comment — keeps HF proxy connection alive during long tool calls
+                        yield ": heartbeat\n\n"
+
+                    elif msg_type == "stream_done":
+                        break
+
+                    elif msg_type == "stream_error":
+                        raise data  # re-raise in main task
+
+            finally:
+                # Clean up: cancel heartbeat, wait for event pump to finish
+                heartbeat_task.cancel()
+                try:
+                    await heartbeat_task
+                except asyncio.CancelledError:
+                    pass
+                if not event_task.done():
+                    event_task.cancel()
+                    try:
+                        await event_task
+                    except asyncio.CancelledError:
+                        pass
 
             message_id = str(uuid.uuid4())
             ai_msg = MessageRecord(

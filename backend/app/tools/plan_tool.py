@@ -42,6 +42,12 @@ def create_study_plan(
         sources = list({m.get("source", "") for m in results["metadatas"] if m.get("source")})
         context = "\n\n".join(results["documents"][:8])
 
+        # For longer plans, reduce daily detail to avoid hitting token limits
+        if duration_days > 14:
+            daily_structure = '"daily_summary": "本阶段每日学习概要（2-3句话描述每日主要内容）"'
+        else:
+            daily_structure = f'"daily_plans": [\n        {{\n          "day": 1,\n          "topic": "今日主题",\n          "tasks": ["任务1", "任务2", "任务3"],\n          "review": "复习内容",\n          "estimated_hours": {daily_hours}\n        }}\n      ]'
+
         prompt = f"""根据以下学习资料，为学生制定一份详细的学习计划。
 
 学习目标：{goal or '全面掌握资料中的知识点'}
@@ -65,23 +71,19 @@ def create_study_plan(
       "name": "阶段名称（如：基础入门）",
       "days": "第1-N天",
       "objectives": ["阶段目标1", "阶段目标2"],
-      "daily_plans": [
-        {{
-          "day": 1,
-          "topic": "今日主题",
-          "tasks": ["任务1", "任务2", "任务3"],
-          "review": "复习内容",
-          "estimated_hours": {daily_hours}
-        }}
-      ]
+      {daily_structure}
     }}
   ],
   "tips": ["学习建议1", "学习建议2", "学习建议3"]
 }}
 
-只输出JSON，不要其他内容。"""
+注意：
+- 每个阶段包含的天数不要太多，3-7天为一个阶段
+- 如果学习周期超过14天，不需要逐日列出详细计划，改为每个阶段写daily_summary概述
+- 必须给出所有{duration_days}天的计划安排，不能截断
+- 只输出JSON，不要其他内容。"""
 
-        llm = get_llm(temperature=0.5)
+        llm = get_llm(temperature=0.5, max_tokens=8192)
         response = llm.invoke([HumanMessage(content=prompt)])
 
         content = response.content.strip()

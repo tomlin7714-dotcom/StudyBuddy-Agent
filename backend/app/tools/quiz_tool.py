@@ -80,7 +80,9 @@ def generate_quiz(
 
 只输出JSON，不要其他内容。"""
 
-        llm = get_llm(temperature=0.3)
+        # More questions need more output tokens
+        token_budget = max(4096, question_count * 800)
+        llm = get_llm(temperature=0.3, max_tokens=token_budget)
         response = llm.invoke([HumanMessage(content=prompt)])
         
         content = response.content.strip()

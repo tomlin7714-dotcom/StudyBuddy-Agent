@@ -1,3 +1,8 @@
+import os
+# Suppress ChromaDB telemetry errors (version compatibility issue)
+os.environ["CHROMA_TELEMETRY"] = "False"
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from sentence_transformers import SentenceTransformer

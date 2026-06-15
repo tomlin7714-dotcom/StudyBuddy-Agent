@@ -42,5 +42,9 @@ RUN mkdir -p /data/chroma /data/uploads
 # HF Spaces requirement
 EXPOSE 7860
 
+# Suppress ChromaDB telemetry errors
+ENV ANONYMIZED_TELEMETRY=False
+ENV CHROMA_TELEMETRY=False
+
 # Start with uvicorn on HF Spaces port
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]

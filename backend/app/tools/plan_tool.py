@@ -42,22 +42,34 @@ def create_study_plan(
         sources = list({m.get("source", "") for m in results["metadatas"] if m.get("source")})
         context = "\n\n".join(results["documents"][:8])
 
-        # Calculate expected phases to help LLM plan correctly
-        suggested_phases = min(5, max(2, duration_days // 4))
+        # Pre-calculate exact phase breakdown so LLM can't truncate
+        days_per_phase = min(5, max(3, duration_days // 3))
+        phase_count = 0
+        phases_spec = []
+        day = 1
+        while day <= duration_days:
+            phase_count += 1
+            end = min(day + days_per_phase - 1, duration_days)
+            phases_spec.append(f"第{phase_count}阶段: 第{day}-{end}天")
+            day = end + 1
 
-        prompt = f"""根据以下学习资料，为学生制定一份学习计划。你必须覆盖全部{duration_days}天！
+        phases_spec_text = "\n".join(phases_spec)
+        first_phase_end = min(days_per_phase, duration_days)
+
+        prompt = f"""根据以下学习资料，为学生制定一份学习计划。
 
 学习目标：{goal or '全面掌握资料中的知识点'}
-学习周期：{duration_days}天（必须全部覆盖！）
+学习周期：{duration_days}天
 每日可用时间：{daily_hours}小时
 涉及资料：{', '.join(sources) or '已上传资料'}
-建议分为{suggested_phases}个阶段
 
 资料内容摘要：
 {context}
 
-请输出如下JSON格式（注意：phases数组中必须包含所有{duration_days}天，不能遗漏）：
+学习计划必须严格分为以下{phase_count}个阶段（不能多也不能少）：
+{phases_spec_text}
 
+请输出如下JSON，phases数组必须恰好包含{phase_count}个元素：
 {{
   "title": "学习计划标题",
   "goal": "学习目标描述",
@@ -68,20 +80,27 @@ def create_study_plan(
     {{
       "phase": 1,
       "name": "阶段名称",
-      "days": "第1-X天",
-      "objectives": ["阶段目标"],
-      "daily_summary": "本阶段{daily_hours}小时/天的学习安排概述（包含每日学习重点）"
+      "days": "第1-{first_phase_end}天",
+      "objectives": ["阶段目标1", "阶段目标2"],
+      "daily_summary": "本阶段{daily_hours}小时/天的学习安排概述"
+    }},
+    {{
+      "phase": 2,
+      "name": "阶段名称",
+      "days": "...",
+      "objectives": ["..."],
+      "daily_summary": "..."
     }}
+    // 必须一直写到阶段{phase_count}，最后一个阶段结束于第{duration_days}天
   ],
-  "tips": ["学习建议"]
+  "tips": ["学习建议1", "学习建议2"]
 }}
 
-重要规则（违反将导致生成失败）：
-- phases数组必须覆盖全部{duration_days}天，从第1天到最后一天，一天不漏
-- 当前是第N个阶段，days字段写"第X-Y天"，Y必须等于下一个阶段的起始-1
-- 最后一个阶段的结束天数必须是{duration_days}
-- daily_summary字段描述本阶段每天的学习内容和重点
-- 只输出JSON，不要输出其他文字"""
+硬性要求：
+- phases数组长度必须恰好等于{phase_count}，不能多也不能少
+- 每个阶段的days字段必须严格按照上面指定的天数范围
+- 最后一个阶段必须覆盖到第{duration_days}天
+- 只输出JSON，不要输出markdown代码块或其他文字"""
 
         llm = get_llm(temperature=0.5, max_tokens=8192)
         response = llm.invoke([HumanMessage(content=prompt)])

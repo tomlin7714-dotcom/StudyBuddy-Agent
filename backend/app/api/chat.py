@@ -182,6 +182,15 @@ async def chat_stream(
             }
 
             full_content = ""
+            # Track tool execution to filter out "thinking process" tokens.
+            # Tokens before the first tool_start are LLM reasoning ("Let me use tool X...")
+            # and should NOT be shown to the user. Only tokens after tool_end
+            # (the final response) should be streamed.
+            # If no tools are called at all (simple chat), all tokens are shown.
+            pending_content = ""   # buffer for pre-tool tokens (may be discarded)
+            tool_started = False   # True after first on_tool_start
+            tool_ended = False     # True after first on_tool_end → final response begins
+
             # Use a Queue to safely interleave SSE heartbeats with stream events.
             # We CANNOT use asyncio.wait_for(stream.__anext__(), timeout=15)
             # because it cancels the async generator's __anext__() coroutine on
@@ -226,14 +235,24 @@ async def chat_stream(
                         if event_type == "on_chat_model_stream":
                             chunk = event.get("data", {}).get("chunk")
                             if chunk and hasattr(chunk, "content") and chunk.content:
-                                full_content += chunk.content
-                                yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+                                if tool_ended:
+                                    # After tool execution: stream final response directly
+                                    full_content += chunk.content
+                                    yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+                                elif not tool_started:
+                                    # Before any tool call: buffer — might be thinking text
+                                    pending_content += chunk.content
+                                # else: tool is running, ignore any stray stream events
 
                         elif event_type == "on_tool_start":
+                            tool_started = True
+                            tool_ended = False  # Reset: agent may chain multiple tool calls
+                            pending_content = ""  # Discard buffered thinking text
                             tool_name = event.get("name", "")
                             yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name})}\n\n"
 
                         elif event_type == "on_tool_end":
+                            tool_ended = True  # Tokens after this are final/intermediate response
                             tool_name = event.get("name", "")
                             yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
 
@@ -242,6 +261,11 @@ async def chat_stream(
                         yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
 
                     elif msg_type == "stream_done":
+                        # If no tools were called, use buffered content (direct chat response)
+                        if not tool_started and pending_content:
+                            full_content = pending_content
+                            # Replay buffered content since we didn't stream it above
+                            yield f"data: {json.dumps({'type': 'token', 'content': pending_content})}\n\n"
                         break
 
                     elif msg_type == "stream_error":

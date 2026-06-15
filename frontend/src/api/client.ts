@@ -172,11 +172,23 @@ export const documentAPI = {
     formData.append('file', file)
     formData.append('knowledge_base_id', knowledgeBaseId)
 
-    // Do NOT set Content-Type manually — the browser sets it automatically
-    // with the correct multipart boundary. Manual override breaks parsing
-    // and can strip the Authorization header, causing 403.
-    const response = await api.post<Document>('/documents/upload', formData)
-    return response.data
+    // Use native fetch for FormData — avoids axios serialization issues
+    const headers = getAuthHeaders()
+    // DELETE Content-Type so the browser sets the correct multipart boundary
+    delete headers['Content-Type']
+
+    const response = await fetch('/documents/upload', {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Upload failed: ${response.status} ${errorText}`)
+    }
+
+    return response.json()
   },
 
   list: async (knowledgeBaseId: string = 'default'): Promise<Document[]> => {

@@ -10,6 +10,7 @@ from app.agent.graph import get_agent
 from loguru import logger
 import uuid
 import json
+import asyncio
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -77,7 +78,8 @@ async def chat(
             "mode": request.mode,
         }
 
-        result = await agent.ainvoke(state, config=config)
+        # 120s timeout to prevent hanging — HF Spaces proxy kills connections after ~60s idle
+        result = await asyncio.wait_for(agent.ainvoke(state, config=config), timeout=120.0)
         last_message = result["messages"][-1]
         ai_content = last_message.content if hasattr(last_message, "content") else str(last_message)
 
@@ -152,7 +154,10 @@ async def chat_stream(
 
     async def generate():
         try:
+            # Send conversation_id immediately to confirm connection is alive
             yield f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': conversation_id})}\n\n"
+            # Signal that the agent is starting to think
+            yield f"data: {json.dumps({'type': 'status', 'status': 'thinking'})}\n\n"
 
             # Load conversation history from DB for context continuity
             history_messages = []
@@ -177,22 +182,37 @@ async def chat_stream(
             }
 
             full_content = ""
-            async for event in agent.astream_events(state, config=config, version="v1"):
-                event_type = event.get("event")
+            # Iterate through stream events.
+            # Use asyncio.wait_for with a 15s timeout per event so we can send
+            # SSE heartbeat comments during long tool executions (quiz/plan generation).
+            # HF Spaces proxy kills connections idle for ~60s, so 15s is safe.
+            stream = agent.astream_events(state, config=config, version="v1")
+            stream_done = False
 
-                if event_type == "on_chat_model_stream":
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk and hasattr(chunk, "content") and chunk.content:
-                        full_content += chunk.content
-                        yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
+            while not stream_done:
+                try:
+                    event = await asyncio.wait_for(stream.__anext__(), timeout=15.0)
+                    event_type = event.get("event")
 
-                elif event_type == "on_tool_start":
-                    tool_name = event.get("name", "")
-                    yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name})}\n\n"
+                    if event_type == "on_chat_model_stream":
+                        chunk = event.get("data", {}).get("chunk")
+                        if chunk and hasattr(chunk, "content") and chunk.content:
+                            full_content += chunk.content
+                            yield f"data: {json.dumps({'type': 'token', 'content': chunk.content})}\n\n"
 
-                elif event_type == "on_tool_end":
-                    tool_name = event.get("name", "")
-                    yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
+                    elif event_type == "on_tool_start":
+                        tool_name = event.get("name", "")
+                        yield f"data: {json.dumps({'type': 'tool_start', 'tool': tool_name})}\n\n"
+
+                    elif event_type == "on_tool_end":
+                        tool_name = event.get("name", "")
+                        yield f"data: {json.dumps({'type': 'tool_end', 'tool': tool_name})}\n\n"
+
+                except asyncio.TimeoutError:
+                    # No event for 15s — send heartbeat comment to keep connection alive
+                    yield ": heartbeat\n\n"
+                except StopAsyncIteration:
+                    stream_done = True
 
             message_id = str(uuid.uuid4())
             ai_msg = MessageRecord(
@@ -215,7 +235,11 @@ async def chat_stream(
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
     )
 
 

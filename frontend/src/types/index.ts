@@ -6,6 +6,7 @@ export interface Message {
   metadata: {
     sources?: Array<{ source: string }>
     mode?: string
+    toolRunning?: string  // transient: set during SSE streaming while tool executes
   }
   created_at: string
 }

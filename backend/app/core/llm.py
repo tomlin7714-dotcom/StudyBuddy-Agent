@@ -14,6 +14,8 @@ def get_llm(temperature: float = 0.7, streaming: bool = False) -> ChatOpenAI:
         temperature=temperature,
         streaming=streaming,
         max_tokens=4096,
+        timeout=120,  # 120s timeout to avoid hanging on slow API responses
+        max_retries=2,
     )
 
 

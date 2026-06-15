@@ -111,11 +111,45 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             {loading && (
               <div className="flex justify-start mb-4">
                 <div className="bg-gray-100 rounded-lg px-4 py-3">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                  </div>
+                  {/* Check if a tool is currently running on the last message */}
+                  {(() => {
+                    const lastMsg = messages[messages.length - 1]
+                    const toolRunning = lastMsg?.metadata?.toolRunning as string | undefined
+                    if (toolRunning) {
+                      const toolNames: Record<string, string> = {
+                        generate_quiz: '正在生成测验题目...',
+                        create_study_plan: '正在制定学习计划...',
+                        retrieve_knowledge: '正在检索学习资料...',
+                        list_knowledge_documents: '正在查询文档列表...',
+                      }
+                      return (
+                        <div className="text-sm text-gray-600">
+                          {toolNames[toolRunning] || `正在执行: ${toolRunning}`}
+                        </div>
+                      )
+                    }
+                    if (lastMsg?.role === 'assistant' && lastMsg?.content) {
+                      // Streaming tokens are arriving, show subtle indicator
+                      return (
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                        </div>
+                      )
+                    }
+                    // No content yet — waiting for agent to start
+                    return (
+                      <div className="flex flex-col gap-1">
+                        <div className="text-sm text-gray-600 mb-1">正在思考...</div>
+                        <div className="flex space-x-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}

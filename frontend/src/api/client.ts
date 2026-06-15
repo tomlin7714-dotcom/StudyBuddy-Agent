@@ -171,12 +171,11 @@ export const documentAPI = {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('knowledge_base_id', knowledgeBaseId)
-    
-    const response = await api.post<Document>('/documents/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+
+    // Do NOT set Content-Type manually — the browser sets it automatically
+    // with the correct multipart boundary. Manual override breaks parsing
+    // and can strip the Authorization header, causing 403.
+    const response = await api.post<Document>('/documents/upload', formData)
     return response.data
   },
 

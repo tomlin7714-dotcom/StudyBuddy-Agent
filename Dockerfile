@@ -36,8 +36,8 @@ COPY backend/ ./
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /frontend/dist ./static
 
-# Create data directories
-RUN mkdir -p data/chroma data/uploads
+# Create data directories (use /data for HF Spaces persistent storage)
+RUN mkdir -p /data/chroma /data/uploads
 
 # HF Spaces requirement
 EXPOSE 7860

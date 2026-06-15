@@ -18,11 +18,11 @@ class Settings(BaseSettings):
     embedding_provider: str = Field("local", env="EMBEDDING_PROVIDER")
 
     # ChromaDB
-    chroma_persist_dir: str = Field("./data/chroma", env="CHROMA_PERSIST_DIR")
+    chroma_persist_dir: str = Field("/data/chroma", env="CHROMA_PERSIST_DIR")
     chroma_collection_name: str = Field("sb", env="CHROMA_COLLECTION_NAME")
 
     # Database
-    database_url: str = Field("sqlite+aiosqlite:///./data/study_buddy.db", env="DATABASE_URL")
+    database_url: str = Field("sqlite+aiosqlite:////data/study_buddy.db", env="DATABASE_URL")
 
     # API
     api_host: str = Field("0.0.0.0", env="API_HOST")
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     )
 
     # Upload
-    upload_dir: str = Field("./data/uploads", env="UPLOAD_DIR")
+    upload_dir: str = Field("/data/uploads", env="UPLOAD_DIR")
     max_upload_size: int = Field(10485760, env="MAX_UPLOAD_SIZE")
 
     # Hugging Face
@@ -54,7 +54,6 @@ class Settings(BaseSettings):
         import os
         os.makedirs(self.chroma_persist_dir, exist_ok=True)
         os.makedirs(self.upload_dir, exist_ok=True)
-        os.makedirs("./data", exist_ok=True)
         if self.hf_hub_offline:
             os.environ["HF_HUB_OFFLINE"] = "1"
 

@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  # ==============================================================
+  # Study Buddy App (FastAPI + React built-in)
+  # ==============================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: study-buddy-app
+    restart: always
+    # Port 7860 is internal only, not exposed to host
+    expose:
+      - "7860"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_API_BASE=${DEEPSEEK_API_BASE:-https://api.deepseek.com/v1}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - CORS_ORIGINS=["https://${DOMAIN}","http://${DOMAIN}"]
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ANONYMIZED_TELEMETRY=False
+      - CHROMA_TELEMETRY=False
+    volumes:
+      # Persistent data storage
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==============================================================
+  # Caddy reverse proxy with automatic HTTPS
+  # ==============================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: study-buddy-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

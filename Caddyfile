@@ -1,0 +1,27 @@
+# Caddy reverse proxy with automatic HTTPS
+# Set DOMAIN env var in .env or docker-compose.prod.yml
+
+{$DOMAIN:localhost} {
+    reverse_proxy app:7860
+
+    # Uncomment below for local testing without HTTPS
+    # tls internal
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        -Server
+    }
+
+    # Request body size limit for file uploads (50MB)
+    request_body {
+        max_size 50MB
+    }
+}

@@ -306,40 +306,199 @@ cd frontend && npm run dev
 
 ## 部署上线
 
-### 方案：阿里云 ECS + Docker + 域名
+### 部署架构
 
 ```
 GitHub Push → Actions 构建镜像 → ghcr.io → 服务器 Docker 拉取运行
+                                              │
+                                    ┌─────────┴──────────┐
+                                    │  study-buddy 容器    │
+                                    │  FastAPI :7860       │
+                                    │  (前端 + 后端一体)    │
+                                    │  /data → 持久化存储   │
+                                    └─────────────────────┘
 ```
 
-### 详细步骤
+### 部署准备
 
-**1. 构建镜像**
+| 条件 | 说明 |
+|------|------|
+| 一台云服务器 | 阿里云 ECS / 腾讯云 / Sealos 均可 |
+| DeepSeek API Key | [platform.deepseek.com](https://platform.deepseek.com) 获取 |
+| Docker 环境 | `curl -fsSL https://get.docker.com \| sh` 一键安装 |
 
-推送代码到 GitHub 后，GitHub Actions 自动构建 Docker 镜像并推送到 `ghcr.io`。
+---
 
-**2. 服务器部署**
+### 方式一：服务器直接部署（推荐）
+
+适用于对 GitHub 访问不稳定的国内服务器。
+
+**1. 克隆代码到服务器**
 
 ```bash
-# 安装 Docker
-curl -fsSL https://get.docker.com | sh
+git clone https://github.com/tomlin7714-dotcom/StudyBuddy-Agent.git
+cd StudyBuddy-Agent
+```
 
-# 启动容器
+**2. 本地构建镜像**
+
+```bash
+docker build -t study-buddy:latest .
+```
+
+**3. 创建 `.env` 文件**
+
+```bash
+cat > .env << 'EOF'
+DEEPSEEK_API_KEY=你的DeepSeek_API_Key
+CORS_ORIGINS=["*"]
+ANONYMIZED_TELEMETRY=False
+CHROMA_TELEMETRY=False
+EOF
+```
+
+> ⚠️ **安全提醒**：`.env` 文件包含 API Key，加入 `.gitignore`，**永远不要提交到 Git**。
+
+**4. 启动容器**
+
+```bash
 docker run -d \
   --name study-buddy \
   --restart always \
-  -p 80:7860 \
-  -e DEEPSEEK_API_KEY=sk-你的Key \
+  -p 8080:7860 \
+  --env-file .env \
+  -v /data/study-buddy:/data \
+  study-buddy:latest
+```
+
+**5. 验证**
+
+```bash
+docker logs study-buddy
+# 看到 "Mounting frontend static files" 说明成功
+curl http://localhost:8080/health
+# 返回 {"status":"healthy"}
+```
+
+浏览器访问 `http://你的服务器IP:8080`。
+
+---
+
+### 方式二：GitHub Actions + ghcr.io 自动部署
+
+推送代码后，GitHub Actions 自动构建镜像并推送到 GitHub Container Registry。
+
+**1. 配置 GitHub Secrets**
+
+在仓库 Settings → Secrets and variables → Actions 中无需额外配置。GitHub Actions 使用内置的 `GITHUB_TOKEN` 登录 ghcr.io。
+
+**2. 推送代码触发构建**
+
+```bash
+git push origin master
+# → GitHub Actions 自动构建并推送到 ghcr.io
+```
+
+**3. 服务器拉取运行**
+
+```bash
+# 拉取最新镜像
+docker pull ghcr.io/tomlin7714-dotcom/studybuddy-agent:latest
+
+# 停旧启新
+docker stop study-buddy && docker rm study-buddy
+
+docker run -d \
+  --name study-buddy \
+  --restart always \
+  -p 8080:7860 \
+  -e DEEPSEEK_API_KEY=你的DeepSeek_API_Key \
+  -e CORS_ORIGINS='["*"]' \
   -e ANONYMIZED_TELEMETRY=False \
+  -e CHROMA_TELEMETRY=False \
   -v /data/study-buddy:/data \
   ghcr.io/tomlin7714-dotcom/studybuddy-agent:latest
 ```
 
-**3. 域名绑定**
+---
 
-- 购买域名（阿里云万网）
-- 提交 ICP 备案（个人备案，约 15-20 天）
-- 备案通过后解析域名到服务器 IP
+### 方式三：Docker Compose（带 Caddy HTTPS）
+
+适合绑定了域名并需要 SSL 的场景。
+
+**1. 准备 `.env`**
+
+```bash
+cat > .env << 'EOF'
+DEEPSEEK_API_KEY=你的DeepSeek_API_Key
+DOMAIN=你的域名
+LOG_LEVEL=INFO
+EOF
+```
+
+**2. 启动**
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+# Caddy 自动申请 Let's Encrypt HTTPS 证书
+```
+
+---
+
+### 更新部署
+
+代码有更新时，重新部署：
+
+```bash
+# 服务器本地构建
+cd ~/StudyBuddy-Agent
+git pull
+docker build -t study-buddy:latest .
+docker stop study-buddy && docker rm study-buddy
+docker run -d \
+  --name study-buddy \
+  --restart always \
+  -p 8080:7860 \
+  --env-file .env \
+  -v /data/study-buddy:/data \
+  study-buddy:latest
+```
+
+如果使用 ghcr.io 镜像：
+
+```bash
+docker pull ghcr.io/tomlin7714-dotcom/studybuddy-agent:latest
+docker stop study-buddy && docker rm study-buddy
+# 然后用相同的 docker run 命令重新启动
+```
+
+---
+
+### 常用运维命令
+
+```bash
+# 查看日志
+docker logs -f study-buddy
+
+# 查看状态
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# 查看容器配置（排查环境变量）
+docker inspect study-buddy --format '{{range .Config.Env}}{{println .}}{{end}}'
+
+# 查看端口映射
+docker port study-buddy
+
+# 进入容器
+docker exec -it study-buddy /bin/bash
+
+# 重启容器
+docker restart study-buddy
+
+# 检查数据持久化
+ls -la /data/study-buddy/
+# 包含 chroma/（向量数据库）、uploads/（上传文件）、study_buddy.db（SQLite）
+```
 
 ### Docker 镜像结构
 
@@ -353,13 +512,25 @@ docker run -d \
 ┌──────────┴──────────────────┐
 │ Stage 2: Python 后端         │
 │   pip install               │
-│   python -c download model   │  ← 预下载嵌入模型到镜像
+│   python -c download model   │  ← 预下载嵌入模型到镜像（~470MB）
 │   COPY backend/              │
 │   CMD uvicorn main:app       │
 └─────────────────────────────┘
 ```
 
 多阶段构建的好处：最终镜像不含 Node.js，体积减少约 40%。
+
+### 安全配置
+
+项目内置了以下安全响应头（`backend/main.py` 中间件自动添加）：
+
+| 响应头 | 值 | 作用 |
+|--------|------|------|
+| `X-Content-Type-Options` | `nosniff` | 禁止浏览器 MIME 嗅探 |
+| `X-Frame-Options` | `DENY` | 防止点击劫持攻击 |
+| `X-XSS-Protection` | `1; mode=block` | 启用浏览器 XSS 过滤 |
+
+静态资源自动添加 `Cache-Control` 头：hashed 文件（`/assets/*`）设长期缓存，HTML 设 `no-cache`。
 
 ---
 

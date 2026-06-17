@@ -11,20 +11,40 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) {
+    const trimmedUser = username.trim()
+    const trimmedPass = password.trim()
+
+    // Frontend validation — match backend Pydantic constraints
+    if (!trimmedUser || !trimmedPass) {
       setError('请填写用户名和密码')
       return
     }
+    if (trimmedUser.length < 2) {
+      setError('用户名至少需要2个字符')
+      return
+    }
+    if (trimmedPass.length < 4) {
+      setError('密码至少需要4个字符')
+      return
+    }
+
     setError('')
     setLoading(true)
     try {
       if (isRegister) {
-        await register(username.trim(), password)
+        await register(trimmedUser, trimmedPass)
       } else {
-        await login(username.trim(), password)
+        await login(trimmedUser, trimmedPass)
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || '操作失败，请重试'
+      const detail = err?.response?.data?.detail
+      let msg = '操作失败，请重试'
+      if (typeof detail === 'string') {
+        msg = detail
+      } else if (Array.isArray(detail)) {
+        // FastAPI 422 validation errors: detail is an array of {type, loc, msg, ...}
+        msg = detail.map((e: any) => e?.msg || '').filter(Boolean).join('；')
+      }
       setError(msg)
     } finally {
       setLoading(false)

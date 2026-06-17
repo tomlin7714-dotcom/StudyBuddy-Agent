@@ -283,10 +283,10 @@ npx vite build
 # 5. 复制前端到后端并启动
 cp -r dist/* ../backend/static/
 cd ../backend
-python -m uvicorn main:app --host 0.0.0.0 --port 9000
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-浏览器打开 `http://localhost:9000`。
+浏览器打开 `http://localhost:8000`。
 
 ### 前端开发模式
 
@@ -294,13 +294,13 @@ python -m uvicorn main:app --host 0.0.0.0 --port 9000
 
 ```bash
 # 终端 1: 启动后端
-cd backend && python -m uvicorn main:app --port 9000
+cd backend && python -m uvicorn main:app --port 8000
 
 # 终端 2: 启动前端开发服务器
 cd frontend && npm run dev
 ```
 
-打开 `http://localhost:5173`（Vite 自动代理 API 到 9000）。
+打开 `http://localhost:5173`（Vite 自动代理 API 到 8000）。
 
 ---
 
@@ -409,10 +409,13 @@ StudyBuddy-Agent/
 │   │       ├── DocumentUploader.tsx  # 拖拽上传组件
 │   │       ├── DocumentList.tsx      # 文档列表（含状态指示）
 │   │       ├── RightPanel.tsx        # 右侧知识库面板
-│   │       ├── QuizCard.tsx          # 测验卡片
-│   │       ├── StudyPlanCard.tsx     # 学习计划卡片
+│   │       ├── ChatInterface.tsx     # 聊天界面容器
+│   │       ├── ConversationList.tsx  # 对话列表
+│   │       ├── DragDropZone.tsx      # 拖拽上传区
+│   │       ├── EmptyState.tsx        # 空状态欢迎页
+│   │       ├── LoginPage.tsx         # 登录注册页
 │   │       ├── ThinkingDots.tsx      # AI 思考动画
-│   │       └── ...
+│   │       └── Message.tsx           # 消息类型封装
 ├── docker-compose.prod.yml           # 生产环境编排
 ├── Caddyfile                         # Caddy HTTPS 反向代理
 ├── DEPLOY.md                         # 部署操作指南

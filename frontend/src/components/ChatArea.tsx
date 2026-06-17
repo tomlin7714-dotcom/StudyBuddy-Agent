@@ -86,12 +86,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               onKeyDown={handleKeyDown}
               className="flex-1 bg-transparent border-none focus:ring-0 text-body-md py-2 px-2 resize-none custom-scrollbar outline-none max-h-40"
               placeholder="输入问题或上传资料..."
+              aria-label="输入消息"
               rows={1}
               disabled={loading}
             />
             <button
               onClick={handleSubmit}
               disabled={!canSend}
+              aria-label="发送消息"
+              title="发送"
               className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 flex-shrink-0
                          disabled:bg-primary/10 disabled:text-primary/40
                          enabled:bg-primary enabled:text-white enabled:shadow-lg enabled:hover:scale-105 active:scale-95"

@@ -143,6 +143,8 @@ function AppContent() {
             className="w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur-md
                        rounded-full shadow-lg border border-outline-variant/20
                        hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+            aria-label="用户菜单"
+            title="用户菜单"
           >
             <span className="text-lg">{auth?.username?.[0] || '?'}</span>
           </button>
@@ -170,7 +172,12 @@ function AppContent() {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-xl
                       border-b border-outline-variant/10 flex items-center justify-between px-4 z-40">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2"
+          aria-label="打开菜单"
+          title="打开菜单"
+        >
           <svg className="w-6 h-6 text-on-surface" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>

@@ -44,6 +44,8 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({ onFileSelect }) => {
         type="file"
         accept=".pdf,.docx,.doc,.txt,.md,.markdown"
         className="absolute inset-0 opacity-0 cursor-pointer"
+        aria-label="上传学习资料"
+        title="上传学习资料"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
       />
     </div>

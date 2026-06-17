@@ -46,13 +46,20 @@ app.add_middleware(
 )
 
 
-# Security headers middleware
+# Security + Cache headers middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Cache-Control: long cache for hashed assets, no-cache for HTML
+    if request.url.path.startswith("/assets/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.url.path == "/" or response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+
     return response
 
 
@@ -73,31 +80,22 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if os.path.isdir(STATIC_DIR) and os.path.isfile(os.path.join(STATIC_DIR, "index.html")):
     logger.info(f"Mounting frontend static files from {STATIC_DIR}")
 
-    # Mount assets directory with long-term cache (filenames are hashed by Vite)
+    # Mount assets directory (filenames are hashed by Vite for cache busting)
     assets_dir = os.path.join(STATIC_DIR, "assets")
     if os.path.isdir(assets_dir):
-        app.mount("/assets", StaticFiles(
-            directory=assets_dir,
-            headers={"Cache-Control": "public, max-age=31536000, immutable"}
-        ), name="assets")
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     # SPA: serve index.html at root and for all non-API paths
     @app.get("/")
     async def serve_root():
-        return FileResponse(
-            os.path.join(STATIC_DIR, "index.html"),
-            headers={"Cache-Control": "no-cache"}
-        )
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         file_path = os.path.join(STATIC_DIR, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(
-            os.path.join(STATIC_DIR, "index.html"),
-            headers={"Cache-Control": "no-cache"}
-        )
+        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 else:
     @app.get("/")
     async def root():

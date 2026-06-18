@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Hugging Face
     hf_hub_offline: bool = Field(True, env="HF_HUB_OFFLINE")
 
+    # Startup
+    preload_embedding: bool = Field(True, env="PRELOAD_EMBEDDING")
+
     # Auth
     jwt_secret: str = Field("study-buddy-secret-change-me", env="JWT_SECRET")
 

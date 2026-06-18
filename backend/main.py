@@ -27,15 +27,20 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("Database initialized")
 
-    # Pre-load embedding model at startup to avoid memory spike during first upload
-    try:
-        from app.rag.vector_store import get_vector_store
-        logger.info("Pre-loading embedding model (this may take a few seconds)...")
-        get_vector_store()
-        logger.info("Embedding model loaded and ready")
-    except Exception as e:
-        logger.error(f"Failed to pre-load embedding model: {e}")
-        # Don't crash — the model will be loaded lazily on first use as fallback
+    # Pre-load embedding model at startup to avoid memory spike during first upload.
+    # Skip on low-memory machines by setting PRELOAD_EMBEDDING=false in .env
+    if settings.preload_embedding:
+        try:
+            from app.rag.vector_store import get_vector_store
+            logger.info("Pre-loading embedding model (this may take a few seconds)...")
+            get_vector_store()
+            logger.info("Embedding model loaded and ready")
+        except Exception as e:
+            logger.error(f"Failed to pre-load embedding model: {e}")
+            # Don't crash — the model will be loaded lazily on first use as fallback
+    else:
+        logger.info("Skipping embedding model pre-load (PRELOAD_EMBEDDING=false)")
+        logger.info("Model will be loaded on first upload — expect a few seconds delay")
 
     yield
     logger.info("Shutting down...")

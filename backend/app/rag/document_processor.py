@@ -100,7 +100,11 @@ class DocumentProcessor:
             
             start = split_point - chunk_overlap if split_point > chunk_overlap else split_point
         
-        return [c for c in chunks if len(c) > 50]
+        result = [c for c in chunks if len(c) > 50]
+        # Don't discard short but non-empty text — keep it as one chunk
+        if not result and text.strip():
+            result = [text.strip()]
+        return result
 
     def process_document(
         self,
@@ -110,6 +114,14 @@ class DocumentProcessor:
         original_name: str
     ) -> Tuple[List[str], List[dict], List[str]]:
         text = self.extract_text(file_path, file_type)
+
+        if not text.strip():
+            raise ValueError(
+                f"文档中未提取到文字内容。"
+                f"如果文件只包含图片，请确保图片中含有可识别的文字，"
+                f"或将文件转换为支持文本提取的格式。"
+            )
+
         chunks = self.chunk_text(text)
         
         chunk_ids = [f"{document_id}_chunk_{i}" for i in range(len(chunks))]

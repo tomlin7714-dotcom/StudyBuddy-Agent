@@ -26,6 +26,17 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Study Buddy Agent...")
     await init_db()
     logger.info("Database initialized")
+
+    # Pre-load embedding model at startup to avoid memory spike during first upload
+    try:
+        from app.rag.vector_store import get_vector_store
+        logger.info("Pre-loading embedding model (this may take a few seconds)...")
+        get_vector_store()
+        logger.info("Embedding model loaded and ready")
+    except Exception as e:
+        logger.error(f"Failed to pre-load embedding model: {e}")
+        # Don't crash — the model will be loaded lazily on first use as fallback
+
     yield
     logger.info("Shutting down...")
 

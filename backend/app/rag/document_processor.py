@@ -53,7 +53,6 @@ class DocumentProcessor:
         extractors = {
             "pdf": self.extract_text_from_pdf,
             "docx": self.extract_text_from_docx,
-            "doc": self.extract_text_from_docx,
             "txt": self.extract_text_from_txt,
             "md": self.extract_text_from_markdown,
             "markdown": self.extract_text_from_markdown,

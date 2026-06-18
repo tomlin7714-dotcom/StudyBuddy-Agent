@@ -6,7 +6,7 @@ import { RightPanel } from './components/RightPanel'
 import { LoginPage } from './components/LoginPage'
 import { useChat } from './hooks/useChat'
 import { useAuth } from './contexts/AuthContext'
-import type { Document, Mode } from './types'
+import type { Document, Mode, UploadingFile } from './types'
 
 function AppContent() {
   const { auth, logout } = useAuth()
@@ -15,6 +15,7 @@ function AppContent() {
   const [panelOpen, setPanelOpen] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('chat')
+  const [uploadingFile, setUploadingFile] = useState<UploadingFile | null>(null)
 
   const {
     messages,
@@ -43,12 +44,16 @@ function AppContent() {
   }, [loadDocuments, loadConversations])
 
   const handleUpload = useCallback(async (file: File) => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    setUploadingFile({ fileName: file.name, fileType: ext })
     try {
       const doc = await documentAPI.upload(file)
       setDocuments(prev => [doc, ...prev])
     } catch (error) {
       console.error('Upload failed:', error)
       alert('文档上传失败')
+    } finally {
+      setUploadingFile(null)
     }
   }, [])
 
@@ -107,6 +112,7 @@ function AppContent() {
           documents={documents}
           onUpload={handleUpload}
           onDelete={handleDeleteDocument}
+          uploadingFile={uploadingFile}
         />
       )}
 

@@ -1,16 +1,19 @@
 import React from 'react'
 import { DragDropZone } from './DragDropZone'
 import { DocumentList } from './DocumentList'
-import type { Document } from '../types'
+import { UploadProgress } from './UploadProgress'
+import type { Document, UploadingFile } from '../types'
 
 interface RightPanelProps {
   documents: Document[]
   onUpload: (file: File) => void
   onDelete: (id: string) => void
+  uploadingFile?: UploadingFile | null
 }
 
-export const RightPanel: React.FC<RightPanelProps> = ({ documents, onUpload, onDelete }) => {
+export const RightPanel: React.FC<RightPanelProps> = ({ documents, onUpload, onDelete, uploadingFile }) => {
   const readyCount = documents.filter(d => d.status === 'ready').length
+  const isUploading = !!uploadingFile
 
   return (
     <aside className="hidden lg:flex flex-col w-[320px] h-full bg-surface-container border-l border-outline-variant/20 z-30">
@@ -25,7 +28,20 @@ export const RightPanel: React.FC<RightPanelProps> = ({ documents, onUpload, onD
         </div>
 
         {/* Upload */}
-        <DragDropZone onFileSelect={onUpload} />
+        <div className={isUploading ? 'opacity-50 pointer-events-none transition-opacity duration-300' : ''}>
+          <DragDropZone onFileSelect={onUpload} disabled={isUploading} />
+        </div>
+
+        {/* Upload Progress */}
+        {uploadingFile && (
+          <div className="mt-lg">
+            <UploadProgress
+              fileName={uploadingFile.fileName}
+              fileType={uploadingFile.fileType}
+              visible={true}
+            />
+          </div>
+        )}
 
         {/* Documents */}
         <div className="mt-xl">

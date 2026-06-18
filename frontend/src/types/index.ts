@@ -87,3 +87,8 @@ export interface KnowledgeBaseInfo {
 }
 
 export type Mode = 'chat' | 'quiz' | 'plan'
+
+export interface UploadingFile {
+  fileName: string
+  fileType: string
+}

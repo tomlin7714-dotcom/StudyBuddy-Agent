@@ -9,6 +9,7 @@ from app.rag.vector_store import get_vector_store
 from app.core.config import get_settings
 from pathlib import Path
 import uuid
+import shutil
 from loguru import logger
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -26,7 +27,7 @@ async def upload_document(
         raise HTTPException(status_code=400, detail=f"文件大小超过限制")
 
     file_ext = Path(file.filename).suffix.lower().strip(".")
-    if file_ext not in ["pdf", "docx", "doc", "txt", "md", "markdown"]:
+    if file_ext not in ["pdf", "docx", "txt", "md", "markdown"]:
         raise HTTPException(status_code=400, detail=f"不支持的文件类型: {file_ext}")
 
     document_id = str(uuid.uuid4())
@@ -34,9 +35,19 @@ async def upload_document(
     file_path = Path(settings.upload_dir) / filename
 
     try:
-        content = await file.read()
+        # Stream file to disk instead of loading entirely into memory.
+        # Large DOCX files (esp. with images) can be 10-50MB; combining that with
+        # the embedding model (~1-2GB) and ZIP decompression causes MemoryError.
+        file_size = 0
         with open(file_path, "wb") as f:
-            f.write(content)
+            while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                f.write(chunk)
+                file_size += len(chunk)
+
+        # Re-check file size after streaming (defense in depth)
+        if file_size > settings.max_upload_size:
+            Path(file_path).unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="文件大小超过限制")
 
         doc_record = DocumentRecord(
             id=document_id,
@@ -44,7 +55,7 @@ async def upload_document(
             filename=filename,
             original_name=file.filename,
             file_type=file_ext,
-            file_size=len(content),
+            file_size=file_size,
             knowledge_base_id=knowledge_base_id,
             status="processing"
         )

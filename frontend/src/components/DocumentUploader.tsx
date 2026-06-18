@@ -51,7 +51,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         <input 
           type="file" 
           className="hidden" 
-          accept=".pdf,.docx,.doc,.txt,.md,.markdown"
+          accept=".pdf,.docx,.txt,.md,.markdown"
           onChange={handleFileChange}
           disabled={uploading}
         />

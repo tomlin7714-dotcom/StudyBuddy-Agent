@@ -27,8 +27,25 @@ class DocumentProcessor:
     def extract_text_from_docx(file_path: str) -> str:
         try:
             doc = DocxDocument(file_path)
-            text = "\n".join([para.text for para in doc.paragraphs])
-            return text
+            parts = []
+
+            # Body paragraphs
+            for para in doc.paragraphs:
+                if para.text.strip():
+                    parts.append(para.text)
+
+            # Tables (python-docx paragraphs exclude table cell content)
+            for table in doc.tables:
+                for row in table.rows:
+                    row_texts = []
+                    for cell in row.cells:
+                        cell_text = "\n".join(p.text for p in cell.paragraphs if p.text.strip())
+                        if cell_text.strip():
+                            row_texts.append(cell_text)
+                    if row_texts:
+                        parts.append(" | ".join(row_texts))
+
+            return "\n".join(parts)
         except Exception as e:
             logger.error(f"Failed to extract text from DOCX {file_path}: {e}")
             raise

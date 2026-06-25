@@ -8,6 +8,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ghcr.io/tomlin7714-dotcom/studybuddy-agent:latest
     container_name: study-buddy-app
     restart: always
     # Port 7860 is internal only, not exposed to host
